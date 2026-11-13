@@ -1,0 +1,16 @@
+7
+0|Alice Smith|alice
+1|Bob Jones|bob
+2|Charlie Brown|charlie
+3|David Clark|david
+4|Emma Watson|emma
+5|Frank Miller|frank
+6|Grace Hopper|grace
+0 1
+0 2
+0 4
+1 3
+1 5
+2 3
+2 6
+3 4
