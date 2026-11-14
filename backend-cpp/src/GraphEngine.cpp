@@ -141,13 +141,13 @@ void GraphEngine::seedDefaultData() {
     users.clear();
     adjList.clear();
 
-    addUser("Alice Smith", "alice");
-    addUser("Bob Jones", "bob");
-    addUser("Charlie Brown", "charlie");
-    addUser("David Clark", "david");
-    addUser("Emma Watson", "emma");
-    addUser("Frank Miller", "frank");
-    addUser("Grace Hopper", "grace");
+    addUser("Ojas Dongre", "ojas");
+    addUser("Prajwal Patekar", "prajwal");
+    addUser("Ved Niturkar", "ved");
+    addUser("Raj Shinde", "raj");
+    addUser("Prathamesh Kulkarni", "prathamesh");
+    addUser("Chinmay Mudgalkar", "chinmay");
+    addUser("Atharva Joshi", "atharva");
 
     addFriendship(0, 1);
     addFriendship(0, 2);
