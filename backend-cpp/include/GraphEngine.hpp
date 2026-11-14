@@ -17,6 +17,7 @@ public:
 
     // State Management
     int addUser(const std::string& name, const std::string& handle);
+    bool deleteUser(int id);
     bool addFriendship(int u, int v);
     
     // Persistence

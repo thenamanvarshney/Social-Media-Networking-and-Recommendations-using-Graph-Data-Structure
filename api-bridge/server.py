@@ -48,6 +48,29 @@ class FallbackGraphEngine:
         self.adj_list.append([])
         return new_id
 
+    def delete_user(self, uid: int) -> bool:
+        n = len(self.users)
+        if uid < 0 or uid >= n:
+            return False
+        # Remove from users and adj_list
+        self.users.pop(uid)
+        self.adj_list.pop(uid)
+        # Re-index contiguous IDs
+        for i in range(len(self.users)):
+            self.users[i]["id"] = i
+        # Update edges in all adjacency lists
+        for i in range(len(self.adj_list)):
+            updated = []
+            for neighbor in self.adj_list[i]:
+                if neighbor == uid:
+                    continue
+                elif neighbor > uid:
+                    updated.append(neighbor - 1)
+                else:
+                    updated.append(neighbor)
+            self.adj_list[i] = updated
+        return True
+
     def add_friendship(self, u: int, v: int) -> bool:
         n = len(self.users)
         if u < 0 or u >= n or v < 0 or v >= n or u == v:
@@ -223,6 +246,11 @@ def run_cpp_engine(args: list[str]):
         new_id = fallback_engine.add_user(args[1], args[2])
         fallback_engine.save_to_file(DATA_FILE)
         return fallback_engine.export_state_to_json(new_id)
+    elif cmd == "delete_user" and len(args) >= 2:
+        uid = int(args[1])
+        fallback_engine.delete_user(uid)
+        fallback_engine.save_to_file(DATA_FILE)
+        return fallback_engine.export_state_to_json(0)
     elif cmd == "add_edge" and len(args) >= 3:
         u, v = int(args[1]), int(args[2])
         fallback_engine.add_friendship(u, v)
@@ -256,6 +284,10 @@ def get_state(user_id: int):
 @app.post("/api/user")
 def create_user(user: UserCreate):
     return run_cpp_engine(["add_user", user.name, user.handle])
+
+@app.delete("/api/user/{user_id}")
+def delete_user(user_id: int):
+    return run_cpp_engine(["delete_user", str(user_id)])
 
 @app.post("/api/friendship")
 def create_friendship(edge: FriendshipCreate):

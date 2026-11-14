@@ -20,6 +20,35 @@ int GraphEngine::addUser(const std::string& name, const std::string& handle) {
     return newId;
 }
 
+bool GraphEngine::deleteUser(int id) {
+    int n = static_cast<int>(users.size());
+    if (id < 0 || id >= n) return false;
+
+    // 1. Remove user from users vector and adjList
+    users.erase(users.begin() + id);
+    adjList.erase(adjList.begin() + id);
+
+    // 2. Re-assign contiguous IDs to remaining users [0..N-1]
+    for (int i = 0; i < static_cast<int>(users.size()); ++i) {
+        users[i].id = i;
+    }
+
+    // 3. Update adjacency lists: remove references to 'id' and shift indices > 'id'
+    for (int i = 0; i < static_cast<int>(adjList.size()); ++i) {
+        std::vector<int> updated;
+        for (int neighbor : adjList[i]) {
+            if (neighbor == id) continue; // remove deleted edge
+            if (neighbor > id) {
+                updated.push_back(neighbor - 1); // shift index
+            } else {
+                updated.push_back(neighbor);
+            }
+        }
+        adjList[i] = std::move(updated);
+    }
+    return true;
+}
+
 bool GraphEngine::addFriendship(int u, int v) {
     int n = static_cast<int>(users.size());
     if (u < 0 || u >= n || v < 0 || v >= n || u == v) return false;

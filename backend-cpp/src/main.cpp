@@ -22,6 +22,12 @@ int main(int argc, char* argv[]) {
         engine.saveToFile(dataFile);
         std::cout << engine.exportStateToJson(newId) << std::endl;
     } 
+    else if (command == "delete_user" && argc >= 3) {
+        int id = std::stoi(argv[2]);
+        engine.deleteUser(id);
+        engine.saveToFile(dataFile);
+        std::cout << engine.exportStateToJson(0) << std::endl;
+    } 
     else if (command == "add_edge" && argc >= 4) {
         int u = std::stoi(argv[2]);
         int v = std::stoi(argv[3]);

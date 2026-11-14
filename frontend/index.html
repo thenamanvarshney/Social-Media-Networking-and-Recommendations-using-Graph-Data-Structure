@@ -73,6 +73,21 @@
           </button>
         </div>
 
+        <!-- Delete User -->
+        <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-3">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-900">4. Delete User</h2>
+            <p class="text-xs text-slate-500">Removes vertex and re-indexes contiguous array</p>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">Select User to Delete</label>
+            <select id="deleteUserSelect" class="w-full p-2 bg-white border border-slate-300 rounded-md text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-500"></select>
+          </div>
+          <button onclick="deleteUser()" class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-md font-medium text-xs shadow-sm transition">
+            Delete User
+          </button>
+        </div>
+
       </div>
 
       <!-- Column 2: Recommendations & Direct Friends -->
@@ -130,6 +145,7 @@
       const select = document.getElementById("activeUserSelect");
       const edgeU = document.getElementById("edgeUserU");
       const edgeV = document.getElementById("edgeUserV");
+      const delSelect = document.getElementById("deleteUserSelect");
 
       const optionsHtml = data.users.map(u => 
         `<option value="${u.id}" ${u.id === currentUserId ? 'selected' : ''}>[${u.id}] ${u.name} (@${u.handle})</option>`
@@ -138,6 +154,7 @@
       select.innerHTML = optionsHtml;
       edgeU.innerHTML = optionsHtml;
       edgeV.innerHTML = optionsHtml;
+      delSelect.innerHTML = optionsHtml;
 
       // Render Direct Friends
       const directContainer = document.getElementById("directFriendsList");
@@ -208,6 +225,23 @@
         renderUI(data);
       } catch (err) {
         console.error("Error adding user:", err);
+      }
+    }
+
+    async function deleteUser() {
+      const select = document.getElementById("deleteUserSelect");
+      if (!select || !select.value) return;
+      const uid = parseInt(select.value);
+      if (!confirm(`Are you sure you want to delete user [${uid}]?`)) return;
+      try {
+        const res = await fetch(`${API_URL}/user/${uid}`, {
+          method: "DELETE"
+        });
+        const data = await res.json();
+        currentUserId = 0;
+        renderUI(data);
+      } catch (err) {
+        console.error("Error deleting user:", err);
       }
     }
 
