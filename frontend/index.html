@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Social Media Graph Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vis.js Network for clean graph visualization -->
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    #graphCanvas {
+      width: 100%;
+      height: 520px;
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.375rem;
+    }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen p-6 font-sans">
   <div class="max-w-6xl mx-auto space-y-6">
@@ -20,8 +31,18 @@
       </button>
     </header>
 
-    <!-- Main 3-Column Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-slate-200 space-x-2 text-xs font-semibold">
+      <button onclick="switchTab('dashboard')" id="tabBtnDashboard" class="px-4 py-2.5 border-b-2 border-slate-900 text-slate-900 transition">
+        Overview & Recommendations
+      </button>
+      <button onclick="switchTab('graph')" id="tabBtnGraph" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+        Network Graph Visualizer
+      </button>
+    </div>
+
+    <!-- TAB 1: Existing 3-Column Layout (Kept exactly as it is) -->
+    <div id="tabDashboard" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       <!-- Column 1: Controls & Active User Selection -->
       <div class="space-y-6">
@@ -120,6 +141,38 @@
 
     </div>
 
+    <!-- TAB 2: Network Graph Format View -->
+    <div id="tabGraph" class="hidden bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 pb-4">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">Network Topology Graph</h2>
+          <p class="text-xs text-slate-500">Interactive node-link representation of all vertices and adjacency edges</p>
+        </div>
+        <!-- Clean Legend -->
+        <div class="flex items-center gap-4 text-xs text-slate-600">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-slate-900 inline-block"></span>
+            <span>Target User</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span>
+            <span>Direct Friends</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-slate-200 border border-slate-400 inline-block"></span>
+            <span>Other Users</span>
+          </div>
+          <button onclick="fitGraphView()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-xs transition">
+            Fit View
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive Canvas -->
+      <div id="graphCanvas"></div>
+      <p class="text-[11px] text-slate-400 italic">Tip: Click any node to select it as the target perspective. Drag nodes or scroll to zoom.</p>
+    </div>
+
   </div>
 
   <script>
@@ -128,6 +181,34 @@
       : "http://127.0.0.1:8000/api";
 
     let currentUserId = 0;
+    let latestGraphData = null;
+    let networkInstance = null;
+    let activeTab = 'dashboard';
+
+    function switchTab(tabName) {
+      activeTab = tabName;
+      const tabDashboard = document.getElementById("tabDashboard");
+      const tabGraph = document.getElementById("tabGraph");
+      const btnDashboard = document.getElementById("tabBtnDashboard");
+      const btnGraph = document.getElementById("tabBtnGraph");
+
+      if (tabName === 'dashboard') {
+        tabDashboard.classList.remove("hidden");
+        tabGraph.classList.add("hidden");
+        btnDashboard.className = "px-4 py-2.5 border-b-2 border-slate-900 text-slate-900 transition";
+        btnGraph.className = "px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
+      } else {
+        tabDashboard.classList.add("hidden");
+        tabGraph.classList.remove("hidden");
+        btnDashboard.className = "px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
+        btnGraph.className = "px-4 py-2.5 border-b-2 border-slate-900 text-slate-900 transition";
+        
+        // Render or re-fit graph when tab becomes visible
+        setTimeout(() => {
+          renderGraphVisualization(latestGraphData);
+        }, 50);
+      }
+    }
 
     async function fetchState(userId = currentUserId) {
       currentUserId = parseInt(userId);
@@ -135,7 +216,11 @@
         const res = await fetch(`${API_URL}/state/${currentUserId}`);
         if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
+        latestGraphData = data;
         renderUI(data);
+        if (activeTab === 'graph') {
+          renderGraphVisualization(data);
+        }
       } catch (err) {
         console.error("Error fetching graph state:", err);
       }
@@ -205,6 +290,105 @@
       `).join("");
     }
 
+    // Graph Visualization (Tab 2)
+    function renderGraphVisualization(data) {
+      if (!data) return;
+      const container = document.getElementById("graphCanvas");
+      const directSet = new Set(data.directFriends || []);
+
+      const nodes = data.users.map(u => {
+        let bgColor = "#f1f5f9"; // Slate 100
+        let borderColor = "#94a3b8"; // Slate 400
+        let fontColor = "#0f172a"; // Slate 900
+        let borderWidth = 1;
+        let size = 20;
+
+        if (u.id === currentUserId) {
+          bgColor = "#0f172a"; // Slate 900
+          borderColor = "#020617";
+          fontColor = "#ffffff";
+          borderWidth = 2;
+          size = 26;
+        } else if (directSet.has(u.id)) {
+          bgColor = "#059669"; // Emerald 600
+          borderColor = "#047857";
+          fontColor = "#ffffff";
+          size = 22;
+        }
+
+        return {
+          id: u.id,
+          label: `${u.name}\n(@${u.handle})`,
+          shape: "box",
+          margin: 8,
+          color: {
+            background: bgColor,
+            border: borderColor,
+            highlight: {
+              background: u.id === currentUserId ? "#0f172a" : "#e2e8f0",
+              border: "#0f172a"
+            }
+          },
+          font: {
+            color: fontColor,
+            size: 12,
+            face: "system-ui, sans-serif"
+          },
+          borderWidth: borderWidth
+        };
+      });
+
+      const edges = data.edges.map(e => ({
+        from: e.source,
+        to: e.target,
+        color: { color: "#cbd5e1", highlight: "#0f172a" },
+        width: 1.5,
+        smooth: false
+      }));
+
+      const networkData = {
+        nodes: new vis.DataSet(nodes),
+        edges: new vis.DataSet(edges)
+      };
+
+      const options = {
+        physics: {
+          solver: "forceAtlas2Based",
+          forceAtlas2Based: {
+            gravitationalConstant: -50,
+            centralGravity: 0.01,
+            springLength: 100,
+            springConstant: 0.08
+          },
+          stabilization: { iterations: 100 }
+        },
+        interaction: {
+          hover: true,
+          zoomView: true,
+          dragView: true
+        }
+      };
+
+      if (networkInstance) {
+        networkInstance.destroy();
+      }
+      networkInstance = new vis.Network(container, networkData, options);
+
+      // Node click handler: switch perspective user
+      networkInstance.on("click", function(params) {
+        if (params.nodes.length > 0) {
+          const clickedId = params.nodes[0];
+          fetchState(clickedId);
+        }
+      });
+    }
+
+    function fitGraphView() {
+      if (networkInstance) {
+        networkInstance.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
+      }
+    }
+
     async function addUser() {
       const name = document.getElementById("newUserName").value.trim();
       const handle = document.getElementById("newUserHandle").value.trim();
@@ -222,7 +406,9 @@
         currentUserId = data.users[data.users.length - 1].id;
         document.getElementById("newUserName").value = "";
         document.getElementById("newUserHandle").value = "";
+        latestGraphData = data;
         renderUI(data);
+        if (activeTab === 'graph') renderGraphVisualization(data);
       } catch (err) {
         console.error("Error adding user:", err);
       }
@@ -239,7 +425,9 @@
         });
         const data = await res.json();
         currentUserId = 0;
+        latestGraphData = data;
         renderUI(data);
+        if (activeTab === 'graph') renderGraphVisualization(data);
       } catch (err) {
         console.error("Error deleting user:", err);
       }
@@ -263,7 +451,9 @@
           body: JSON.stringify({ u, v })
         });
         const data = await res.json();
+        latestGraphData = data;
         renderUI(data);
+        if (activeTab === 'graph') renderGraphVisualization(data);
       } catch (err) {
         console.error("Error connecting edge:", err);
       }
@@ -274,7 +464,9 @@
         const res = await fetch(`${API_URL}/reset`, { method: "POST" });
         const data = await res.json();
         currentUserId = 0;
+        latestGraphData = data;
         renderUI(data);
+        if (activeTab === 'graph') renderGraphVisualization(data);
       } catch (err) {
         console.error("Error resetting graph:", err);
       }
