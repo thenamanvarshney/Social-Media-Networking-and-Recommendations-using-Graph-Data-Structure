@@ -3,10 +3,12 @@
 
 #include <string>
 
+using namespace std;
+
 struct User {
     int id;             // Internal contiguous index [0, N-1]
-    std::string name;   // Display name
-    std::string handle; // Unique username/handle
+    string name;        // Display name
+    string handle;      // Unique username/handle
 };
 
 struct Recommendation {

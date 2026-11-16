@@ -2,8 +2,10 @@
 #include <iostream>
 #include <string>
 
+using namespace std;
+
 int main(int argc, char* argv[]) {
-    const std::string dataFile = "network_data.txt";
+    const string dataFile = "network_data.txt";
     GraphEngine engine;
 
     if (!engine.loadFromFile(dataFile)) {
@@ -11,34 +13,34 @@ int main(int argc, char* argv[]) {
         engine.saveToFile(dataFile);
     }
 
-    std::string command = (argc > 1) ? argv[1] : "state";
+    string command = (argc > 1) ? argv[1] : "state";
 
     if (command == "state") {
-        int activeUser = (argc > 2) ? std::stoi(argv[2]) : 0;
-        std::cout << engine.exportStateToJson(activeUser) << std::endl;
+        int activeUser = (argc > 2) ? stoi(argv[2]) : 0;
+        cout << engine.exportStateToJson(activeUser) << endl;
     } 
     else if (command == "add_user" && argc >= 4) {
         int newId = engine.addUser(argv[2], argv[3]);
         engine.saveToFile(dataFile);
-        std::cout << engine.exportStateToJson(newId) << std::endl;
+        cout << engine.exportStateToJson(newId) << endl;
     } 
     else if (command == "delete_user" && argc >= 3) {
-        int id = std::stoi(argv[2]);
+        int id = stoi(argv[2]);
         engine.deleteUser(id);
         engine.saveToFile(dataFile);
-        std::cout << engine.exportStateToJson(0) << std::endl;
+        cout << engine.exportStateToJson(0) << endl;
     } 
     else if (command == "add_edge" && argc >= 4) {
-        int u = std::stoi(argv[2]);
-        int v = std::stoi(argv[3]);
+        int u = stoi(argv[2]);
+        int v = stoi(argv[3]);
         engine.addFriendship(u, v);
         engine.saveToFile(dataFile);
-        std::cout << engine.exportStateToJson(u) << std::endl;
+        cout << engine.exportStateToJson(u) << endl;
     } 
     else if (command == "reset") {
         engine.seedDefaultData();
         engine.saveToFile(dataFile);
-        std::cout << engine.exportStateToJson(0) << std::endl;
+        cout << engine.exportStateToJson(0) << endl;
     }
 
     return 0;

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <iomanip>
 
+using namespace std;
+
 bool GraphEngine::edgeExists(int u, int v) const {
     if (u < 0 || u >= static_cast<int>(adjList.size())) return false;
     for (int neighbor : adjList[u]) {
@@ -13,7 +15,7 @@ bool GraphEngine::edgeExists(int u, int v) const {
     return false;
 }
 
-int GraphEngine::addUser(const std::string& name, const std::string& handle) {
+int GraphEngine::addUser(const string& name, const string& handle) {
     int newId = static_cast<int>(users.size());
     users.push_back({newId, name, handle});
     adjList.emplace_back();
@@ -35,7 +37,7 @@ bool GraphEngine::deleteUser(int id) {
 
     // 3. Update adjacency lists: remove references to 'id' and shift indices > 'id'
     for (int i = 0; i < static_cast<int>(adjList.size()); ++i) {
-        std::vector<int> updated;
+        vector<int> updated;
         for (int neighbor : adjList[i]) {
             if (neighbor == id) continue; // remove deleted edge
             if (neighbor > id) {
@@ -44,7 +46,7 @@ bool GraphEngine::deleteUser(int id) {
                 updated.push_back(neighbor);
             }
         }
-        adjList[i] = std::move(updated);
+        adjList[i] = move(updated);
     }
     return true;
 }
@@ -59,14 +61,14 @@ bool GraphEngine::addFriendship(int u, int v) {
     return true;
 }
 
-std::vector<Recommendation> GraphEngine::getRecommendations(int targetId, int topK) const {
+vector<Recommendation> GraphEngine::getRecommendations(int targetId, int topK) const {
     int n = static_cast<int>(users.size());
     if (targetId < 0 || targetId >= n) return {};
 
     // On-Demand O(V) Temporary Allocations
-    std::vector<int> mutualCount(n, 0);
-    std::vector<double> adamicAdar(n, 0.0);
-    std::vector<bool> isExcluded(n, false);
+    vector<int> mutualCount(n, 0);
+    vector<double> adamicAdar(n, 0.0);
+    vector<bool> isExcluded(n, false);
 
     // Exclude target user and existing Level-1 direct friends
     isExcluded[targetId] = true;
@@ -78,7 +80,7 @@ std::vector<Recommendation> GraphEngine::getRecommendations(int targetId, int to
     for (int directFriend : adjList[targetId]) {
         int friendDegree = static_cast<int>(adjList[directFriend].size());
         // Dampening weight for popular nodes: 1 / log(degree)
-        double weight = (friendDegree > 1) ? (1.0 / std::log(friendDegree)) : 1.0;
+        double weight = (friendDegree > 1) ? (1.0 / log(friendDegree)) : 1.0;
 
         for (int candidate : adjList[directFriend]) {
             if (!isExcluded[candidate]) {
@@ -89,7 +91,7 @@ std::vector<Recommendation> GraphEngine::getRecommendations(int targetId, int to
     }
 
     // Collect valid candidates
-    std::vector<Recommendation> results;
+    vector<Recommendation> results;
     for (int i = 0; i < n; ++i) {
         if (mutualCount[i] > 0) {
             results.push_back({i, mutualCount[i], adamicAdar[i]});
@@ -97,7 +99,7 @@ std::vector<Recommendation> GraphEngine::getRecommendations(int targetId, int to
     }
 
     // Sort primarily by Mutual Friends, then by Adamic-Adar score
-    std::sort(results.begin(), results.end(), [](const Recommendation& a, const Recommendation& b) {
+    sort(results.begin(), results.end(), [](const Recommendation& a, const Recommendation& b) {
         if (a.mutualCount != b.mutualCount) {
             return a.mutualCount > b.mutualCount;
         }
@@ -111,8 +113,8 @@ std::vector<Recommendation> GraphEngine::getRecommendations(int targetId, int to
     return results;
 }
 
-bool GraphEngine::saveToFile(const std::string& filename) const {
-    std::ofstream out(filename);
+bool GraphEngine::saveToFile(const string& filename) const {
+    ofstream out(filename);
     if (!out.is_open()) return false;
 
     out << users.size() << "\n";
@@ -130,8 +132,8 @@ bool GraphEngine::saveToFile(const std::string& filename) const {
     return true;
 }
 
-bool GraphEngine::loadFromFile(const std::string& filename) {
-    std::ifstream in(filename);
+bool GraphEngine::loadFromFile(const string& filename) {
+    ifstream in(filename);
     if (!in.is_open()) return false;
 
     users.clear();
@@ -139,23 +141,23 @@ bool GraphEngine::loadFromFile(const std::string& filename) {
 
     int n = 0;
     if (!(in >> n)) return false;
-    std::string dummy;
-    std::getline(in, dummy);
+    string dummy;
+    getline(in, dummy);
 
     users.resize(n);
     adjList.resize(n);
 
     for (int i = 0; i < n; ++i) {
-        std::string line;
-        if (!std::getline(in, line)) return false;
-        std::stringstream ss(line);
-        std::string idStr, name, handle;
+        string line;
+        if (!getline(in, line)) return false;
+        stringstream ss(line);
+        string idStr, name, handle;
         
-        std::getline(ss, idStr, '|');
-        std::getline(ss, name, '|');
-        std::getline(ss, handle, '|');
+        getline(ss, idStr, '|');
+        getline(ss, name, '|');
+        getline(ss, handle, '|');
 
-        int id = std::stoi(idStr);
+        int id = stoi(idStr);
         users[id] = {id, name, handle};
     }
 
@@ -188,9 +190,9 @@ void GraphEngine::seedDefaultData() {
     addFriendship(4, 3);
 }
 
-std::string GraphEngine::exportStateToJson(int activeUserId) const {
-    std::ostringstream oss;
-    oss << std::fixed << std::setprecision(2);
+string GraphEngine::exportStateToJson(int activeUserId) const {
+    ostringstream oss;
+    oss << fixed << setprecision(2);
     oss << "{\n";
 
     // Users array
